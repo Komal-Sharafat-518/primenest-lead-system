@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrimeNest Realty — Find Your Next Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --sand: #EFE8DA;
+    --sand-light: #FAF6EE;
+    --charcoal: #1E2A24;
+    --moss: #4B5D52;
+    --brass: #B08D57;
+    --brass-light: #D9BE93;
+    --line: rgba(30, 42, 36, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--sand);
+    color: var(--charcoal);
+    min-height: 100vh;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  /* Left panel — brand / pitch */
+  .intro {
+    background: var(--charcoal);
+    color: var(--sand-light);
+    padding: 72px 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .intro::before {
+    content: "";
+    position: absolute;
+    right: -120px;
+    top: -120px;
+    width: 340px;
+    height: 340px;
+    border: 1px solid rgba(217, 190, 147, 0.25);
+    border-radius: 50%;
+  }
+
+  .intro::after {
+    content: "";
+    position: absolute;
+    right: -40px;
+    top: 60px;
+    width: 200px;
+    height: 200px;
+    border: 1px solid rgba(217, 190, 147, 0.18);
+    border-radius: 50%;
+  }
+
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 12px;
+    color: var(--brass-light);
+    font-weight: 600;
+  }
+
+  .headline {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(36px, 4vw, 52px);
+    font-weight: 500;
+    line-height: 1.12;
+    margin-top: 20px;
+    max-width: 480px;
+    letter-spacing: -0.01em;
+  }
+
+  .headline em {
+    font-style: italic;
+    color: var(--brass-light);
+  }
+
+  .subcopy {
+    margin-top: 22px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: rgba(250, 246, 238, 0.72);
+    max-width: 420px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 40px;
+    margin-top: 56px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .stat-num {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    color: var(--brass-light);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: rgba(250, 246, 238, 0.6);
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .footnote {
+    font-size: 12px;
+    color: rgba(250, 246, 238, 0.4);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Right panel — form */
+  .form-side {
+    background: var(--sand-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    top: -14px;
+    left: 0;
+    width: 46px;
+    height: 3px;
+    background: var(--brass);
+  }
+
+  .card h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .card p.lead-in {
+    font-size: 14px;
+    color: var(--moss);
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  .field {
+    margin-bottom: 18px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--moss);
+    margin-bottom: 7px;
+  }
+
+  .field input,
+  .field textarea {
+    width: 100%;
+    padding: 13px 14px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    color: var(--charcoal);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px rgba(176, 141, 87, 0.15);
+  }
+
+  .field textarea {
+    resize: vertical;
+    min-height: 88px;
+  }
+
+  button[type="submit"] {
+    width: 100%;
+    padding: 15px;
+    background: var(--charcoal);
+    color: var(--sand-light);
+    border: none;
+    border-radius: 3px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background 0.15s ease;
+  }
+
+  button[type="submit"]:hover {
+    background: #2C3D34;
+  }
+
+  button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  #statusMsg {
+    margin-top: 16px;
+    font-size: 13.5px;
+    min-height: 18px;
+  }
+
+  #statusMsg.success { color: #3E6B52; }
+  #statusMsg.error { color: #A44A3F; }
+
+  @media (max-width: 860px) {
+    .page { grid-template-columns: 1fr; }
+    .intro { padding: 48px 32px; }
+    .stats { margin-top: 36px; }
+    .form-side { padding: 40px 28px 64px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <section class="intro">
+      <div>
+        <span class="eyebrow">PrimeNest Realty · Houston, TX</span>
+        <h1 class="headline">Every good move<br>starts with <em>one conversation.</em></h1>
+        <p class="subcopy">Tell us what you're looking for and a PrimeNest agent will reach out within one business day — no bots, no pressure.</p>
+
+        <div class="stats">
+          <div>
+            <div class="stat-num">4.9</div>
+            <div class="stat-label">Client rating</div>
+          </div>
+          <div>
+            <div class="stat-num">12+</div>
+            <div class="stat-label">Neighborhoods covered</div>
+          </div>
+          <div>
+            <div class="stat-num">24hr</div>
+            <div class="stat-label">Avg. response time</div>
+          </div>
+        </div>
+      </div>
+      <p class="footnote">PrimeNest Realty is a fictional demo business.</p>
+    </section>
+
+    <section class="form-side">
+      <div class="card">
+        <h2>Get in touch</h2>
+        <p class="lead-in">Fill this out and we'll match you with an agent who knows your market.</p>
+
+        <form id="leadForm">
+          <div class="field">
+            <label for="name">Full name</label>
+            <input type="text" id="name" placeholder="Jordan Blake" required>
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="jordan@email.com" required>
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" placeholder="(713) 555-0192">
+          </div>
+          <div class="field">
+            <label for="message">What are you looking for?</label>
+            <textarea id="message" placeholder="e.g. 3-bed home near Rice Village, budget around $450k"></textarea>
+          </div>
+          <button type="submit" id="submitBtn">Request a callback</button>
+        </form>
+
+        <p id="statusMsg"></p>
+      </div>
+    </section>
+  </div>
+
+<script>
+  const SUPABASE_URL = "https://xbskayruqdhtoxxbfubt.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_7b2XAxK3VBUNl8RoZ-9TTA_0YbMHEY9";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const form = document.getElementById("leadForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const statusMsg = document.getElementById("statusMsg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending...";
+    statusMsg.textContent = "";
+    statusMsg.className = "";
+
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const phone = document.getElementById("phone").value;
+    const message = document.getElementById("message").value;
+
+    const { error } = await supabaseClient.from("leads").insert([
+      { name, email, phone, message, status: "new" }
+    ]);
+
+    if (error) {
+      statusMsg.textContent = "Something went wrong. Please try again.";
+      statusMsg.className = "error";
+      console.error(error);
+    } else {
+      statusMsg.textContent = "Thanks — a PrimeNest agent will reach out soon.";
+      statusMsg.className = "success";
+      form.reset();
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Request a callback";
+  });
+</script>
+</body>
+</html>
