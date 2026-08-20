@@ -60,4 +60,4 @@ Thresholds are configurable in `config/businessConfig.js`.
 
 ---
 
-Built by Komal Sharafat as a portfolio project demonstrating AI + automation engineering.
+Built by Komal Sharafat  demonstrating AI + automation engineering.
