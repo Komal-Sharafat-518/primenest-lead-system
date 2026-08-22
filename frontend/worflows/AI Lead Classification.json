@@ -1,0 +1,407 @@
+{
+  "name": "AI Lead Classification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-lead",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ba3218bd-f50c-4232-a9f2-911553d66206",
+      "name": "Webhook",
+      "webhookId": "af504baf-1502-4687-b596-524808717783"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-20b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a real estate lead qualification assistant. Analyze the lead's message and return ONLY valid JSON with this exact structure: {\\\"score\\\": number 0-100, \\\"classification\\\": \\\"COLD\\\" or \\\"WARM\\\" or \\\"HOT\\\", \\\"summary\\\": \\\"one sentence reason\\\"}. Do not include any text outside the JSON.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Lead message: {{ $json.body.message }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "c0dcec46-3f20-41aa-92aa-078baae8d53e",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "oCVu2clRqiKzvXbY",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook').item.json.body.email }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "score",
+              "fieldValue": "={{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).score }}"
+            },
+            {
+              "fieldId": "classification",
+              "fieldValue": "={{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).classification }}"
+            },
+            {
+              "fieldId": "ai_summary",
+              "fieldValue": "={{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).summary }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "1bee020f-f015-46bb-8a92-e74c49fafaba",
+      "name": "Update a row",
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "TuXy20UlSFNqEcLU",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "komalsharafat00@gmail.com",
+        "toEmail": "komalsharafat00@gmail.com",
+        "subject": "={{ JSON.parse($json.choices[0].message.content).subject }}",
+        "html": "=New HOT lead! Name: {{ $('Webhook').item.json.body.name }} Email: {{ $('Webhook').item.json.body.email }} Phone: {{ $('Webhook').item.json.body.phone }} Message: {{ $('Webhook').item.json.body.message }} Score: {{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).score }} Summary: {{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).summary }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        896,
+        -192
+      ],
+      "id": "d2161cb3-b12d-405f-9d62-4c38509d75dc",
+      "name": "Send an Email",
+      "webhookId": "4a6fe747-be54-46f2-87a2-873211865c23",
+      "credentials": {
+        "smtp": {
+          "id": "HFIgfFg4BsAJBZ4M",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "{{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).classification }}",
+                    "rightValue": "=HOT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "03fbd3c1-d176-43e6-93f7-db171b16c106"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HOT"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f163dcc3-a851-42fd-90e6-0aebc9004bf6",
+                    "leftValue": "={{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).classification }}",
+                    "rightValue": "WARM",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "WARM"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "bbec5ef1-8dcc-40b6-8d06-9658fab6a3bd",
+                    "leftValue": "={{ JSON.parse($('HTTP Request').item.json.choices[0].message.content).classification }}",
+                    "rightValue": "COLD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "COLD"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "cbfd377d-1d6d-4d41-bcb1-3d8a9a5f3bee",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": " https://api.groq.com/openai/v1/chat/completions ",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"model\": \"openai/gpt-oss-20b\", \"messages\": [ { \"role\": \"system\", \"content\": \"You are a friendly real estate assistant for PrimeNest Realty. Write a warm, encouraging follow-up email (not urgent/pushy) to a lead who showed genuine interest. Keep it short, 3-4 sentences, friendly tone. Return ONLY valid JSON: {\\\"subject\\\": \\\"email subject line\\\", \\\"body\\\": \\\"email body text\\\"}\" }, { \"role\": \"user\", \"content\": \"Lead name: {{ $('Webhook').item.json.body.name }}. Lead message: {{ $('Webhook').item.json.body.message }}\" } ], \"response_format\": { \"type\": \"json_object\" } }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        928,
+        16
+      ],
+      "id": "4fad9022-776a-40a4-ba6f-5d783e7692d4",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "oCVu2clRqiKzvXbY",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "komalsharafat00@gmail.com",
+        "toEmail": "komalsharafat00@gmail.com",
+        "subject": "={{ JSON.parse($json.choices[0].message.content).subject }}",
+        "html": "={{ JSON.parse($json.choices[0].message.content).body }}1\n2\n3\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1152,
+        16
+      ],
+      "id": "a235c039-6f75-49c8-b53d-e433810a05be",
+      "name": "Send an Email1",
+      "webhookId": "980dc173-9dc2-45f4-b1cf-6a6f63266806",
+      "credentials": {
+        "smtp": {
+          "id": "HFIgfFg4BsAJBZ4M",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": " https://api.groq.com/openai/v1/chat/completions ",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"openai/gpt-oss-20b\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a friendly real estate assistant for PrimeNest Realty. Write a soft, no-pressure follow-up email to a lead who showed only mild interest. Keep it short, 2-3 sentences, casual and low-key tone, letting them know you're available whenever they're ready - no urgency. Return ONLY valid JSON: {\\\"subject\\\": \\\"email subject line\\\", \\\"body\\\": \\\"email body text\\\"}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Lead name: {{ $('Webhook').item.json.body.name }}. Lead message: {{ $('Webhook').item.json.body.message }}\"\n    }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        944,
+        240
+      ],
+      "id": "df20607a-119e-477e-b1bd-54ce2d5cd319",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "oCVu2clRqiKzvXbY",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "komalsharafat00@gmail.com",
+        "toEmail": "komalsharafat00@gmail.com",
+        "subject": "={{ JSON.parse($json.choices[0].message.content).subject }}",
+        "html": "={{ JSON.parse($json.choices[0].message.content).body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1184,
+        240
+      ],
+      "id": "079d762c-11e0-496d-95c8-f3191b8a1c00",
+      "name": "Send an Email2",
+      "webhookId": "980dc173-9dc2-45f4-b1cf-6a6f63266806",
+      "credentials": {
+        "smtp": {
+          "id": "HFIgfFg4BsAJBZ4M",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Send an Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Send an Email2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "08426df8-5f38-4d9c-9c2a-41a64bfd01e5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "42df27bc9810e47d85c310bf9c038241b2601606d73aa25c5cbe44990835f037"
+  },
+  "nodeGroups": [],
+  "id": "fa1NrmZjl4FN5tVI",
+  "tags": []
+}
