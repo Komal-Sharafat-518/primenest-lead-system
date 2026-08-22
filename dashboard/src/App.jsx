@@ -12,7 +12,60 @@ function classBadge(classification) {
   return `badge badge-${classification.toLowerCase()}`
 }
 
-function App() {
+function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setError('Incorrect email or password.')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="login-wrap">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <span className="eyebrow">PrimeNest Realty</span>
+        <h1>Staff Login</h1>
+        <p className="login-sub">Sign in to view leads.</p>
+
+        <div className="field">
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="field">
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        {error && <p className="login-error">{error}</p>}
+
+        <button type="submit" disabled={loading}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+function Dashboard({ onLogout }) {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -54,9 +107,14 @@ function App() {
           <span className="eyebrow">PrimeNest Realty</span>
           <h1>Lead Dashboard</h1>
         </div>
-        <button className="refresh-btn" onClick={fetchLeads}>
-          Refresh
-        </button>
+        <div className="header-actions">
+          <button className="refresh-btn" onClick={fetchLeads}>
+            Refresh
+          </button>
+          <button className="logout-btn" onClick={onLogout}>
+            Sign out
+          </button>
+        </div>
       </header>
 
       <div className="stat-row">
@@ -143,6 +201,36 @@ function App() {
       )}
     </div>
   )
+}
+
+function App() {
+  const [session, setSession] = useState(null)
+  const [checking, setChecking] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setChecking(false)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+  }
+
+  if (checking) return null
+
+  if (!session) {
+    return <LoginPage />
+  }
+
+  return <Dashboard onLogout={handleLogout} />
 }
 
 export default App
