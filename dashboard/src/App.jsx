@@ -12,6 +12,7 @@ const supabase = createClient(
 )
 
 const CLASS_COLORS = { HOT: '#A44A3F', WARM: '#B08D57', COLD: '#4B6B8A' }
+const STATUS_OPTIONS = ['new', 'contacted', 'replied', 'opted_out', 'won', 'lost']
 
 function classBadge(classification) {
   if (!classification) return 'badge badge-none'
@@ -54,7 +55,7 @@ function LoginPage() {
   )
 }
 
-function LeadsTable({ leads, loading, error, filter, setFilter, counts }) {
+function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatusChange }) {
   const filteredLeads = filter === 'ALL' ? leads : leads.filter((l) => l.classification === filter)
 
   return (
@@ -88,7 +89,7 @@ function LeadsTable({ leads, loading, error, filter, setFilter, counts }) {
             <thead>
               <tr>
                 <th>Name</th><th>Contact</th><th>Message</th><th>Score</th>
-                <th>Status</th><th>AI Summary</th><th>Received</th>
+                <th>Classification</th><th>Status</th><th>AI Summary</th><th>Received</th>
               </tr>
             </thead>
             <tbody>
@@ -102,6 +103,19 @@ function LeadsTable({ leads, loading, error, filter, setFilter, counts }) {
                   <td className="cell-message">{lead.message}</td>
                   <td className="cell-score">{lead.score !== null ? lead.score : '—'}</td>
                   <td><span className={classBadge(lead.classification)}>{lead.classification || 'Pending'}</span></td>
+                  <td>
+                    <select
+                      className={`status-select status-${lead.status || 'new'}`}
+                      value={lead.status || 'new'}
+                      onChange={(e) => onStatusChange(lead.id, e.target.value)}
+                    >
+                      {STATUS_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt.replace('_', ' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="cell-summary">{lead.ai_summary || '—'}</td>
                   <td className="cell-date">
                     {new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -137,9 +151,7 @@ function AnalyticsView({ leads, counts }) {
       const day = new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       byDay[day] = (byDay[day] || 0) + 1
     })
-    return Object.entries(byDay)
-      .map(([day, count]) => ({ day, count }))
-      .slice(-14)
+    return Object.entries(byDay).map(([day, count]) => ({ day, count })).slice(-14)
   }, [leads])
 
   if (leads.length === 0) {
@@ -154,9 +166,7 @@ function AnalyticsView({ leads, counts }) {
           <span className="metric-label">Average lead score</span>
         </div>
         <div className="metric-card">
-          <span className="metric-num">
-            {leads.length > 0 ? Math.round((counts.HOT / leads.length) * 100) : 0}%
-          </span>
+          <span className="metric-num">{leads.length > 0 ? Math.round((counts.HOT / leads.length) * 100) : 0}%</span>
           <span className="metric-label">Leads classified Hot</span>
         </div>
         <div className="metric-card">
@@ -227,6 +237,15 @@ function Dashboard({ onLogout }) {
     setLoading(false)
   }
 
+  async function handleStatusChange(leadId, newStatus) {
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)))
+    const { error } = await supabase.from('leads').update({ status: newStatus }).eq('id', leadId)
+    if (error) {
+      console.error('Failed to update status:', error.message)
+      fetchLeads()
+    }
+  }
+
   const counts = {
     HOT: leads.filter((l) => l.classification === 'HOT').length,
     WARM: leads.filter((l) => l.classification === 'WARM').length,
@@ -252,7 +271,11 @@ function Dashboard({ onLogout }) {
       </div>
 
       {tab === 'leads' && (
-        <LeadsTable leads={leads} loading={loading} error={error} filter={filter} setFilter={setFilter} counts={counts} />
+        <LeadsTable
+          leads={leads} loading={loading} error={error}
+          filter={filter} setFilter={setFilter} counts={counts}
+          onStatusChange={handleStatusChange}
+        />
       )}
       {tab === 'analytics' && <AnalyticsView leads={leads} counts={counts} />}
     </div>
