@@ -55,8 +55,18 @@ function LoginPage() {
   )
 }
 
-function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatusChange }) {
-  const filteredLeads = filter === 'ALL' ? leads : leads.filter((l) => l.classification === filter)
+function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatusChange, search, setSearch }) {
+  const filteredLeads = leads
+    .filter((l) => filter === 'ALL' || l.classification === filter)
+    .filter((l) => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return (
+        l.name?.toLowerCase().includes(q) ||
+        l.email?.toLowerCase().includes(q) ||
+        l.phone?.toLowerCase().includes(q)
+      )
+    })
 
   return (
     <>
@@ -79,9 +89,17 @@ function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatus
         </button>
       </div>
 
+      <input
+        type="text"
+        className="search-input"
+        placeholder="Search by name, email, or phone..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
       {loading && <p className="state-msg">Loading leads…</p>}
       {error && <p className="state-msg error">Couldn't load leads: {error}</p>}
-      {!loading && !error && filteredLeads.length === 0 && <p className="state-msg">No leads in this view yet.</p>}
+      {!loading && !error && filteredLeads.length === 0 && <p className="state-msg">No leads match this view.</p>}
 
       {!loading && !error && filteredLeads.length > 0 && (
         <div className="table-wrap">
@@ -225,6 +243,7 @@ function Dashboard({ onLogout }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('ALL')
+  const [search, setSearch] = useState('')
   const [tab, setTab] = useState('leads')
 
   useEffect(() => { fetchLeads() }, [])
@@ -238,11 +257,18 @@ function Dashboard({ onLogout }) {
   }
 
   async function handleStatusChange(leadId, newStatus) {
+    const previous = leads.find((l) => l.id === leadId)?.status
     setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)))
-    const { error } = await supabase.from('leads').update({ status: newStatus }).eq('id', leadId)
-    if (error) {
-      console.error('Failed to update status:', error.message)
-      fetchLeads()
+
+    const { data, error } = await supabase
+      .from('leads')
+      .update({ status: newStatus })
+      .eq('id', leadId)
+      .select()
+
+    if (error || !data || data.length === 0) {
+      console.error('Status update failed or was blocked:', error?.message || 'No rows updated (check RLS policy)')
+      setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: previous } : l)))
     }
   }
 
@@ -275,6 +301,7 @@ function Dashboard({ onLogout }) {
           leads={leads} loading={loading} error={error}
           filter={filter} setFilter={setFilter} counts={counts}
           onStatusChange={handleStatusChange}
+          search={search} setSearch={setSearch}
         />
       )}
       {tab === 'analytics' && <AnalyticsView leads={leads} counts={counts} />}
