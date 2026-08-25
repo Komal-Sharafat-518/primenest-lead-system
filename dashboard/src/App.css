@@ -407,6 +407,10 @@ tbody tr:last-child td { border-bottom: none; }
   outline: none;
   border-color: #B08D57;
 }
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .status-new { background: var(--line); color: var(--moss); }
 .status-contacted { background: rgba(75, 107, 138, 0.12); color: var(--cold); }

@@ -286,7 +286,9 @@ function Dashboard({ onLogout }) {
           <h1>Lead Dashboard</h1>
         </div>
         <div className="header-actions">
-          <button className="refresh-btn" onClick={fetchLeads}>Refresh</button>
+          <button className="refresh-btn" onClick={fetchLeads} disabled={loading}>
+  {loading ? 'Refreshing…' : 'Refresh'}
+</button>
           <button className="logout-btn" onClick={onLogout}>Sign out</button>
         </div>
       </header>
