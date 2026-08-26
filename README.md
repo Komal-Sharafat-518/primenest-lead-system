@@ -12,7 +12,7 @@
 [![React](https://img.shields.io/badge/Dashboard-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react&logoColor=black)](https://vitejs.dev/)
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com/)
 
-[Live Dashboard]([#](https://primenest-lead-system.vercel.app/)) · [Watch Demo](#) · [Report Bug](../../issues)
+[Live Dashboard]([#https://primenest-lead-system.vercel.app/]) · [Watch Demo](#) · [Report Bug](../../issues)
 
 </div>
 
