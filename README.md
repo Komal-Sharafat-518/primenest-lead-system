@@ -28,11 +28,6 @@ Real estate agents lose deals not because leads don't come in — but because le
 
 ## 🎥 Preview
 
-<!--
-  Drop your screenshots into a `docs/screenshots/` folder in the repo root
-  using these exact filenames, and they'll render automatically below.
--->
-
 <table>
 <tr>
 <td width="50%">
@@ -43,22 +38,36 @@ Real estate agents lose deals not because leads don't come in — but because le
 </td>
 <td width="50%">
 
-**Analytics Dashboard**
-<img src="docs/screenshots/dashboard-analytics.png" alt="Analytics dashboard" width="100%">
+**Leads Table (Filterable)**
+<img src="docs/screenshots/dashboard-leads-table.png" alt="Leads table" width="100%">
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-**Leads Table (Filterable)**
-<img src="docs/screenshots/dashboard-leads-table.png" alt="Leads table" width="100%">
+**Analytics — Classification Breakdown**
+<img src="docs/screenshots/dashboard-analytics.png" alt="Analytics dashboard" width="100%">
 
 </td>
 <td width="50%">
 
-**n8n Classification Workflow**
-<img src="docs/screenshots/n8n-workflow.png" alt="n8n workflow canvas" width="100%">
+**Analytics — Leads Over Time**
+<img src="docs/screenshots/dashboard-leads-over-time.png" alt="Leads received over time" width="100%">
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**n8n — AI Lead Classification Workflow**
+<img src="docs/screenshots/n8n-lead-classification.png" alt="n8n AI Lead Classification workflow" width="100%">
+
+</td>
+<td width="50%">
+
+**n8n — Scheduled Followup Workflow**
+<img src="docs/screenshots/n8n-scheduled-followup.png" alt="n8n Scheduled Followup workflow" width="100%">
 
 </td>
 </tr>
@@ -145,8 +154,8 @@ flowchart TD
 
 This repo includes two exported workflows in `frontend/workflows/`:
 
-1. **`AI Lead Classification`** — the main pipeline: `Webhook → Groq → Update → Get Row → IF → Switch → 3× (Groq + Email)` branches for HOT / WARM / COLD.
-2. **`Scheduled Followup`** — the re-engagement pipeline: `Schedule Trigger → Get Row (status=new, classification≠HOT) → Loop Over Items → Groq → Send Email → Update (status=contacted) → Wait`.
+1. **`AI Lead Classification`** *(pictured above, left)* — the main pipeline: `Webhook → Groq → Update → Get Row → IF → Switch → 3× (Groq + Email)` branches for HOT / WARM / COLD.
+2. **`Scheduled Followup`** *(pictured above, right)* — the re-engagement pipeline: `Schedule Trigger → Get Row (status=new, classification≠HOT) → Loop Over Items → Groq → Send Email → Update (status=contacted) → Wait`.
 
 > ⚠️ Both JSON exports are due for a refresh — the Follow-Up Safety check and Scheduled Re-engagement nodes were added after the last export.
 
