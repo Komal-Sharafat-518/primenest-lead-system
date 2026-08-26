@@ -157,7 +157,7 @@ This repo includes two exported workflows in `frontend/workflows/`:
 1. **`AI Lead Classification`** *(pictured above, left)* — the main pipeline: `Webhook → Groq → Update → Get Row → IF → Switch → 3× (Groq + Email)` branches for HOT / WARM / COLD.
 2. **`Scheduled Followup`** *(pictured above, right)* — the re-engagement pipeline: `Schedule Trigger → Get Row (status=new, classification≠HOT) → Loop Over Items → Groq → Send Email → Update (status=contacted) → Wait`.
 
-> ⚠️ Both JSON exports are due for a refresh — the Follow-Up Safety check and Scheduled Re-engagement nodes were added after the last export.
+
 
 ---
 
