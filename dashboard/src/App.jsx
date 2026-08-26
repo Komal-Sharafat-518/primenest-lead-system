@@ -55,7 +55,100 @@ function LoginPage() {
   )
 }
 
+function formatDateTime(value) {
+  if (!value) return null
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  })
+}
+
+function daysSince(value) {
+  if (!value) return null
+  const diffMs = Date.now() - new Date(value).getTime()
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+}
+
+function LeadDetailsModal({ lead, onClose, onStatusChange }) {
+  if (!lead) return null
+
+  const sentAt = formatDateTime(lead.last_followup_sent_at)
+  const daysAgo = daysSince(lead.last_followup_sent_at)
+  const isClosed = ['won', 'lost', 'opted_out'].includes(lead.status)
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <div>
+            <span className={classBadge(lead.classification)}>{lead.classification || 'Pending'}</span>
+            <h2>{lead.name}</h2>
+          </div>
+          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+        </div>
+
+        <div className="modal-section">
+          <span className="modal-label">Contact</span>
+          <p>{lead.email}{lead.phone && ` · ${lead.phone}`}</p>
+        </div>
+
+        <div className="modal-section">
+          <span className="modal-label">Full Message</span>
+          <p className="modal-message">{lead.message}</p>
+        </div>
+
+        <div className="modal-section modal-score-row">
+          <div>
+            <span className="modal-label">Score</span>
+            <p className="modal-score">{lead.score !== null ? lead.score : '—'}</p>
+          </div>
+          <div>
+            <span className="modal-label">Received</span>
+            <p>{formatDateTime(lead.created_at)}</p>
+          </div>
+        </div>
+
+        <div className="modal-section">
+          <span className="modal-label">AI Reasoning</span>
+          <p>{lead.ai_summary || 'Not yet classified.'}</p>
+        </div>
+
+        <div className="modal-section">
+          <span className="modal-label">Follow-up History</span>
+          {sentAt ? (
+            <p>
+              Last automated follow-up sent <strong>{sentAt}</strong> ({daysAgo === 0 ? 'today' : `${daysAgo} day${daysAgo === 1 ? '' : 's'} ago`})
+            </p>
+          ) : (
+            <p>
+              {isClosed
+                ? 'No follow-up sent — lead is closed, so it was never queued.'
+                : lead.classification === 'HOT'
+                ? 'No follow-up sent — HOT leads are handled directly, not by the automated nudge sequence.'
+                : 'No follow-up sent yet. Will be picked up on the next scheduled run.'}
+            </p>
+          )}
+        </div>
+
+        <div className="modal-section">
+          <span className="modal-label">Status</span>
+          <select
+            className={`status-select status-${lead.status || 'new'}`}
+            value={lead.status || 'new'}
+            onChange={(e) => onStatusChange(lead.id, e.target.value)}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt.replace('_', ' ')}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatusChange, search, setSearch }) {
+  const [selectedLead, setSelectedLead] = useState(null)
+
   const filteredLeads = leads
     .filter((l) => filter === 'ALL' || l.classification === filter)
     .filter((l) => {
@@ -67,6 +160,9 @@ function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatus
         l.phone?.toLowerCase().includes(q)
       )
     })
+
+  // Keep the modal's data fresh if leads refetch while it's open
+  const modalLead = selectedLead ? leads.find((l) => l.id === selectedLead.id) || selectedLead : null
 
   return (
     <>
@@ -112,7 +208,7 @@ function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatus
             </thead>
             <tbody>
               {filteredLeads.map((lead) => (
-                <tr key={lead.id}>
+                <tr key={lead.id} className="lead-row" onClick={() => setSelectedLead(lead)}>
                   <td className="cell-name">{lead.name}</td>
                   <td className="cell-contact">
                     <span>{lead.email}</span>
@@ -121,7 +217,7 @@ function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatus
                   <td className="cell-message">{lead.message}</td>
                   <td className="cell-score">{lead.score !== null ? lead.score : '—'}</td>
                   <td><span className={classBadge(lead.classification)}>{lead.classification || 'Pending'}</span></td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <select
                       className={`status-select status-${lead.status || 'new'}`}
                       value={lead.status || 'new'}
@@ -144,6 +240,12 @@ function LeadsTable({ leads, loading, error, filter, setFilter, counts, onStatus
           </table>
         </div>
       )}
+
+      <LeadDetailsModal
+        lead={modalLead}
+        onClose={() => setSelectedLead(null)}
+        onStatusChange={onStatusChange}
+      />
     </>
   )
 }
@@ -286,9 +388,7 @@ function Dashboard({ onLogout }) {
           <h1>Lead Dashboard</h1>
         </div>
         <div className="header-actions">
-          <button className="refresh-btn" onClick={fetchLeads} disabled={loading}>
-  {loading ? 'Refreshing…' : 'Refresh'}
-</button>
+          <button className="refresh-btn" onClick={fetchLeads}>Refresh</button>
           <button className="logout-btn" onClick={onLogout}>Sign out</button>
         </div>
       </header>
