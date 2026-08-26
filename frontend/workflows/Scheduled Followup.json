@@ -1,0 +1,350 @@
+{
+  "name": "Scheduled Followup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8b73338a-58dd-402e-8c60-8a4a9e3987c0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ad6a13ac-1341-49ab-977c-5b1768338d75",
+              "leftValue": "={{ $json.classification }}",
+              "rightValue": "HOT",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        656,
+        -144
+      ],
+      "id": "f305fd52-5e79-4435-b8bf-47ed74d18bde",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"model\": \"openai/gpt-oss-120b\", \"messages\": [ { \"role\": \"system\", \"content\": \"You are a friendly real estate assistant for PrimeNest Realty. This lead was contacted a few days ago and has not replied yet. Write a brief, warm re-engagement email checking if they are still interested. Keep it short, 2-3 sentences, no pressure. Return ONLY valid JSON: {\\\"subject\\\": \\\"email subject line\\\", \\\"body\\\": \\\"email body text\\\"}\" }, { \"role\": \"user\", \"content\": \"Lead name: {{ $json.name }}. Original message: {{ $json.message }}\" } ], \"response_format\": { \"type\": \"json_object\" } }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        928,
+        -176
+      ],
+      "id": "e80d64bd-9868-43ae-a3e8-e7d3f12912d0",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "oCVu2clRqiKzvXbY",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "komalsharafat00@gmail.com",
+        "toEmail": "komalsharafat00@gmail.com",
+        "subject": "= {{ JSON.parse($json.choices[0].message.content).subject }} ",
+        "html": "={{ JSON.parse($json.choices[0].message.content).body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1120,
+        -96
+      ],
+      "id": "8b5beefa-a6e6-4a87-b9e0-a70902350c17",
+      "name": "Send an Email",
+      "webhookId": "d9c07c65-ccf3-4dd1-b1e5-75bd6e86c821",
+      "credentials": {
+        "smtp": {
+          "id": "HFIgfFg4BsAJBZ4M",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Loop Over Items').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "last_followup_sent_at",
+              "fieldValue": "={{ $now }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        -96
+      ],
+      "id": "387d18dc-b031-4b26-bbe7-92c986b3e51a",
+      "name": "Update a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "TuXy20UlSFNqEcLU",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1552,
+        -96
+      ],
+      "id": "be07e558-b5a3-4161-9b88-69b2a9ea97df",
+      "name": "Wait",
+      "webhookId": "6ba46521-536d-4f71-9b02-6b915187b1dd"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "neq",
+              "keyValue": "won"
+            },
+            {
+              "keyName": "status",
+              "condition": "neq",
+              "keyValue": "lost"
+            },
+            {
+              "keyName": "status",
+              "condition": "neq",
+              "keyValue": "opted_out"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "3b8d3b3a-1a0b-45f6-b41c-452a0e223b9c",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TuXy20UlSFNqEcLU",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const DAYS_BETWEEN_FOLLOWUPS = 3;\nconst THRESHOLD_MS = DAYS_BETWEEN_FOLLOWUPS * 24 * 60 * 60 * 1000;\nconst now = Date.now();\n\nconst eligible = items.filter(item => {\n  const lastSent = item.json.last_followup_sent_at;\n  if (!lastSent) return true;\n  const lastSentTime = new Date(lastSent).getTime();\n  return (now - lastSentTime) >= THRESHOLD_MS;\n});\n\nreturn eligible;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -128
+      ],
+      "id": "0b311dfd-b6cc-4cad-a8dd-7b3b17086dcf",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        464,
+        160
+      ],
+      "id": "2609da90-efc5-430a-a904-c2076c86232b",
+      "name": "Loop Over Items"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d0caccad-1bc8-4a88-b6df-9203b1801c12",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "42df27bc9810e47d85c310bf9c038241b2601606d73aa25c5cbe44990835f037"
+  },
+  "nodeGroups": [],
+  "id": "KEM3LIsUcbrxR1zv",
+  "tags": []
+}

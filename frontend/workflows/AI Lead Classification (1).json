@@ -102,7 +102,7 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        896,
+        1344,
         -192
       ],
       "id": "d2161cb3-b12d-405f-9d62-4c38509d75dc",
@@ -200,8 +200,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        672,
-        0
+        1120,
+        -64
       ],
       "id": "cbfd377d-1d6d-4d41-bcb1-3d8a9a5f3bee",
       "name": "Switch"
@@ -220,7 +220,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        928,
+        1376,
         16
       ],
       "id": "4fad9022-776a-40a4-ba6f-5d783e7692d4",
@@ -237,13 +237,13 @@
         "fromEmail": "komalsharafat00@gmail.com",
         "toEmail": "komalsharafat00@gmail.com",
         "subject": "={{ JSON.parse($json.choices[0].message.content).subject }}",
-        "html": "={{ JSON.parse($json.choices[0].message.content).body }}1\n2\n3\n",
+        "html": "={{ JSON.parse($json.choices[0].message.content).body }}\n",
         "options": {}
       },
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        1152,
+        1600,
         16
       ],
       "id": "a235c039-6f75-49c8-b53d-e433810a05be",
@@ -270,7 +270,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        944,
+        1392,
         240
       ],
       "id": "df20607a-119e-477e-b1bd-54ce2d5cd319",
@@ -293,7 +293,7 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        1184,
+        1632,
         240
       ],
       "id": "079d762c-11e0-496d-95c8-f3191b8a1c00",
@@ -305,6 +305,68 @@
           "name": "SMTP account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "keyValue": "={{ $('Webhook').item.json.body.email }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "02d54356-71d8-4895-8a89-f6a90b335c23",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TuXy20UlSFNqEcLU",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75b2a3e4-9ea6-4f08-a4e8-9d8e1ce659d9",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "new",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        0
+      ],
+      "id": "b55f283e-1ef1-4a30-9294-7c3cfbef8d82",
+      "name": "If"
     }
   ],
   "pinData": {},
@@ -335,7 +397,7 @@
       "main": [
         [
           {
-            "node": "Switch",
+            "node": "Get a row",
             "type": "main",
             "index": 0
           }
@@ -388,6 +450,28 @@
           }
         ]
       ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -396,7 +480,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "08426df8-5f38-4d9c-9c2a-41a64bfd01e5",
+  "versionId": "76407104-3350-4a27-bf5b-d8206dd61894",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "42df27bc9810e47d85c310bf9c038241b2601606d73aa25c5cbe44990835f037"
