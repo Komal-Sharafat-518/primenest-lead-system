@@ -12,7 +12,7 @@
 [![React](https://img.shields.io/badge/Dashboard-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react&logoColor=black)](https://vitejs.dev/)
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com/)
 
-[Live Dashboard](#) · [Watch Demo](#) · [Report Bug](../../issues)
+[Live Dashboard](https://primenest-lead-system.vercel.app/) · [Watch Demo](#) · [Report Bug](../../issues)
 
 </div>
 
@@ -157,7 +157,7 @@ This repo includes two exported workflows in `frontend/workflows/`:
 1. **`AI Lead Classification`** *(pictured above, left)* — the main pipeline: `Webhook → Groq → Update → Get Row → IF → Switch → 3× (Groq + Email)` branches for HOT / WARM / COLD.
 2. **`Scheduled Followup`** *(pictured above, right)* — the re-engagement pipeline: `Schedule Trigger → Get Row (status=new, classification≠HOT) → Loop Over Items → Groq → Send Email → Update (status=contacted) → Wait`.
 
-> ⚠️ Both JSON exports are due for a refresh — the Follow-Up Safety check and Scheduled Re-engagement nodes were added after the last export.
+
 
 ---
 
